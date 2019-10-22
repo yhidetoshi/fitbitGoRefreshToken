@@ -1,0 +1,51 @@
+service: fitbit
+frameworkVersion: ">=1.48.0"
+
+provider:
+  name: aws
+  stage: dev
+  runtime: go1.x
+  region: ap-northeast-1
+
+
+functions:
+  refreshToken:
+    handler: main
+    role: FitbitRefreshTokenLambda
+    timeout: 30
+    description: Fetch Fitbit data
+    memorySize: 128
+    environment:
+      RefreshToken: ${opt:refresh-token}
+      BASIC: ${opt:basic}
+    events:
+      - schedule: rate(4 hours)
+
+
+resources:
+  Resources:
+    FitbitRefreshTokenLambda:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: FitbitRefreshTokenLambda
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: sts:AssumeRole
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/AmazonSSMFullAccess
+        Policies:
+          - PolicyName: FitbitRefreshTokenLambda
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - "logs:CreateLogGroup"
+                    - "logs:CreateLogStream"
+                    - "logs:PutLogEvents"
+                  Resource: "*"
